@@ -72,8 +72,18 @@ docker compose up -d --wait --wait-timeout 600
 `v4.3.1.8`, or image digest before pulling. Workflow dispatch validates a branch
 without publishing. Pull requests also build/test without publishing. Pushes to
 main and `v*` tags publish **the image that passed the smoke test**, using the
-repository's `GITHUB_TOKEN` with `packages:write`; no deployment credentials are
-needed. Enable Actions/package creation in repository settings as required.
+repository's `GITHUB_TOKEN` with `packages:write`. The same tested image is also
+published to Docker Hub as `ozzysin/openthingsboard-ce:dev` and
+`ozzysin/openthingsboard-ce:sha-<full-commit>`. Configure the repository variable
+`DOCKERHUB_USERNAME` and repository secret `DOCKERHUB_TOKEN` (a Docker Hub access
+token with write access to that repository). No deployment credentials are needed.
+Both registry logins and publications require a successful workflow and a push
+event in `ozzyoig/openthingsboard-ce`; pull requests, including fork PRs, and
+manual runs never authenticate to either registry or publish images. A failed
+build or smoke test prevents publication. `dev` follows the last successfully
+published main or release-tag build. To use Docker Hub in this Compose stack,
+set `TB_IMAGE=ozzysin/openthingsboard-ce:dev` (or pin its commit tag) in `.env`.
+Enable Actions/package creation in repository settings as required.
 The initial GHCR package may be private; change its visibility separately if
 anonymous pulls are desired. Only linux/amd64 is currently built.
 
