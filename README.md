@@ -14,6 +14,7 @@
 
 ## 🚀 Installation options
 
+* OpenThingsBoard CE [isolated Docker development environment and GHCR builds](deploy/dev/README.md)
 * Install ThingsBoard [On-premise](https://thingsboard.io/docs/user-guide/install/installation-options/?ceInstallType=onPremise)
 * Try [ThingsBoard Cloud](https://thingsboard.io/installations/)
 * or [Use our Live demo](https://demo.thingsboard.io/signup)
