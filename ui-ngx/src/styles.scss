@@ -1384,3 +1384,17 @@ pre.tb-highlight {
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+// Runtime branding accents; preserve the light/dark surfaces and semantic colors.
+html.tb-branded {
+  .mat-toolbar.mat-primary, .tb-primary-background {
+    background-color: var(--tb-brand-primary) !important;
+    color: var(--tb-brand-on-primary) !important;
+  }
+  .mat-mdc-raised-button.mat-primary, .mat-mdc-unelevated-button.mat-primary {
+    --mdc-protected-button-container-color: var(--tb-brand-primary);
+    --mdc-protected-button-label-text-color: var(--tb-brand-on-primary);
+    --mdc-filled-button-container-color: var(--tb-brand-primary);
+    --mdc-filled-button-label-text-color: var(--tb-brand-on-primary);
+  }
+}

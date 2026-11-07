@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright The Thingsboard Authors
 // SPDX-License-Identifier: Apache-2.0
 import 'hammerjs';
+import { BrandingService } from '@core/http/branding.service';
 
 import { Component } from '@angular/core';
 
@@ -33,7 +34,8 @@ export class AppComponent {
               private translate: TranslateService,
               private matIconRegistry: MatIconRegistry,
               private domSanitizer: DomSanitizer,
-              private authService: AuthService) {
+              private authService: AuthService,
+              public branding: BrandingService) {
 
     console.log(`ThingsBoard Version: ${env.tbVersion}`);
 

@@ -1,4 +1,25 @@
 {
+    "branding": {
+        "title": "Appearance / White Labeling",
+        "app-name": "Application name",
+        "logo": "Interface logo",
+        "login-logo": "Login logo",
+        "favicon": "Favicon (PNG)",
+        "primary-color": "Primary accent color",
+        "inherit": "Leave empty to inherit the global value or built-in default.",
+        "global-help": "These public settings appear on the login screen and are inherited by tenants. Save to apply changes.",
+        "tenant-help": "These overrides apply only to your tenant after login. Empty fields inherit global settings.",
+        "color-help": "#RRGGBB; toolbar and primary buttons only. Light/dark surfaces remain unchanged.",
+        "color-error": "Enter #RRGGBB or leave empty.",
+        "image-help": "PNG, JPEG or WebP; favicon: PNG only. Maximum 256 KiB and 2048 × 2048 pixels. Click Save to persist uploaded images.",
+        "image-error": "Invalid image. Check the format, file size and dimensions.",
+        "clear": "Clear override / inherit",
+        "reset": "Reset all overrides",
+        "reset-done": "Inherited or built-in defaults restored.",
+        "saved": "Branding saved.",
+        "save-error": "Could not save branding. Check the values and try again.",
+        "load-error": "Could not load branding."
+    },
     "access": {
         "unauthorized": "Unauthorized",
         "unauthorized-access": "Unauthorized Access",

@@ -59,6 +59,7 @@ export enum MenuId {
   mobile_qr_code_widget = 'mobile_qr_code_widget',
   settings = 'settings',
   general = 'general',
+  appearance = 'appearance',
   mail_server = 'mail_server',
   home_settings = 'home_settings',
   notification_settings = 'notification_settings',
@@ -338,6 +339,10 @@ export const menuSectionMap = new Map<MenuId, MenuSection>([
       path: '/settings',
       icon: 'settings'
     }
+  ],
+  [
+    MenuId.appearance,
+    {id: MenuId.appearance, name: 'branding.title', type: 'link', path: '/settings/appearance', icon: 'palette'}
   ],
   [
     MenuId.general,
@@ -799,6 +804,7 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
         id: MenuId.settings,
         pages: [
           {id: MenuId.general},
+          {id: MenuId.appearance},
           {id: MenuId.mail_server},
           {id: MenuId.notification_settings},
           {id: MenuId.queues}
@@ -905,6 +911,7 @@ const defaultUserMenuMap = new Map<Authority, MenuReference[]>([
         id: MenuId.settings,
         pages: [
           {id: MenuId.home_settings},
+          {id: MenuId.appearance},
           {id: MenuId.notification_settings},
           {id: MenuId.repository_settings},
           {id: MenuId.auto_commit_settings},

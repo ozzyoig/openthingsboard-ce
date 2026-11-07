@@ -15,6 +15,10 @@
 }
 
 <ng-template #logo>
-  <img [src]="src" aria-label="logo" alt="Logo"/>
+  <div class="tb-brand-logo">
+    <img [src]="brandingEnabled ? ((login ? branding.value.loginLogo || branding.value.logo : branding.value.logo) || src) : src"
+         [alt]="brandingEnabled ? branding.value.appName : 'Logo'"/>
+    @if (brandingEnabled) { <span>{{ branding.value.appName }}</span> }
+  </div>
 </ng-template>
 

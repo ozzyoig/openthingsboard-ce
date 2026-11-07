@@ -1,4 +1,25 @@
 {
+    "branding": {
+        "title": "Wygląd / White Labeling",
+        "app-name": "Nazwa aplikacji",
+        "logo": "Logo interfejsu",
+        "login-logo": "Logo logowania",
+        "favicon": "Fawikona (PNG)",
+        "primary-color": "Podstawowy kolor akcentu",
+        "inherit": "Puste pole dziedziczy ustawienie globalne lub domyślne.",
+        "global-help": "Te publiczne ustawienia są widoczne podczas logowania i dziedziczone przez tenantów. Zapisz, aby zastosować zmiany.",
+        "tenant-help": "Te nadpisania dotyczą tylko Twojego tenanta po zalogowaniu. Puste pola dziedziczą ustawienia globalne.",
+        "color-help": "#RRGGBB; pasek narzędzi i przyciski podstawowe. Powierzchnie jasnego i ciemnego motywu pozostają bez zmian.",
+        "color-error": "Wpisz #RRGGBB lub pozostaw puste pole.",
+        "image-help": "PNG, JPEG lub WebP; fawikona tylko PNG. Maksymalnie 256 KiB i 2048 × 2048 pikseli. Kliknij Zapisz, aby zachować przesłane grafiki.",
+        "image-error": "Nieprawidłowa grafika. Sprawdź format, rozmiar i wymiary.",
+        "clear": "Usuń nadpisanie / dziedzicz",
+        "reset": "Przywróć ustawienia domyślne",
+        "reset-done": "Przywrócono ustawienia dziedziczone lub domyślne.",
+        "saved": "Zapisano wygląd aplikacji.",
+        "save-error": "Nie udało się zapisać ustawień. Sprawdź wartości i spróbuj ponownie.",
+        "load-error": "Nie udało się wczytać ustawień."
+    },
     "access": {
         "unauthorized": "Nieautoryzowany",
         "unauthorized-access": "Nieautoryzowany dostęp",

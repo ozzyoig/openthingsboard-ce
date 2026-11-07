@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright The Thingsboard Authors
 // SPDX-License-Identifier: Apache-2.0
+import { BrandingComponent } from './branding.component';
 import { inject, NgModule } from '@angular/core';
 import { ActivatedRouteSnapshot, ResolveFn, Router, RouterModule, RouterStateSnapshot, Routes } from '@angular/router';
 
@@ -226,6 +227,16 @@ const routes: Routes = [
             SYS_ADMIN: '/settings/general',
             TENANT_ADMIN: '/settings/home'
           }
+        }
+      },
+      {
+        path: 'appearance',
+        component: BrandingComponent,
+        canDeactivate: [ConfirmOnExitGuard],
+        data: {
+          auth: [Authority.SYS_ADMIN, Authority.TENANT_ADMIN],
+          title: 'branding.title',
+          breadcrumb: { menuId: MenuId.appearance }
         }
       },
       {

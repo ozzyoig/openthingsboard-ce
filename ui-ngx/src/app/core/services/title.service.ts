@@ -5,16 +5,18 @@ import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { filter } from 'rxjs/operators';
-
-import { environment as env } from '@env/environment';
+import { combineLatest, of, Subscription } from 'rxjs';
+import { BrandingService } from '@core/http/branding.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TitleService {
+  private titleSubscription: Subscription;
   constructor(
     private translate: TranslateService,
-    private title: Title
+    private title: Title,
+    private branding: BrandingService
   ) {}
 
   setTitle(
@@ -27,15 +29,12 @@ export class TitleService {
     }
     const { title } = lastChild.data;
     const translate = lazyTranslate || this.translate;
-    if (title) {
-      translate
-        .get(title)
-        .pipe(filter(translatedTitle => translatedTitle !== title))
-        .subscribe(translatedTitle =>
-          this.title.setTitle(`${env.appTitle} | ${translatedTitle}`)
-        );
-    } else {
-      this.title.setTitle(env.appTitle);
-    }
+    this.titleSubscription?.unsubscribe();
+    this.titleSubscription = combineLatest([
+      this.branding.settings$,
+      title ? translate.get(title).pipe(filter(translatedTitle => translatedTitle !== title)) : of('')
+    ]).subscribe(([branding, translatedTitle]) => this.title.setTitle(
+      translatedTitle ? `${branding.appName} | ${translatedTitle}` : branding.appName
+    ));
   }
 }

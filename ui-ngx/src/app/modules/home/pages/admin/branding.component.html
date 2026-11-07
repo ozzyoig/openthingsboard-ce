@@ -1,0 +1,44 @@
+<!-- SPDX-FileCopyrightText: Copyright The Thingsboard Authors -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<mat-card appearance="outlined" class="settings-card">
+  <mat-card-header><mat-card-title>{{ 'branding.title' | translate }}</mat-card-title></mat-card-header>
+  <mat-card-content>
+    <p>{{ (global ? 'branding.global-help' : 'branding.tenant-help') | translate }}</p>
+    <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-4">
+      <mat-form-field subscriptSizing="dynamic">
+        <mat-label>{{ 'branding.app-name' | translate }}</mat-label>
+        <input matInput formControlName="appName" maxlength="80" />
+        <mat-hint>{{ 'branding.inherit' | translate }}</mat-hint>
+      </mat-form-field>
+      <mat-form-field subscriptSizing="dynamic">
+        <mat-label>{{ 'branding.primary-color' | translate }}</mat-label>
+        <input matInput formControlName="primaryColor" placeholder="#305680" />
+        <mat-hint>{{ 'branding.color-help' | translate }}</mat-hint>
+        <mat-error>{{ 'branding.color-error' | translate }}</mat-error>
+      </mat-form-field>
+      @for (field of imageFields; track field.key) {
+        <section class="flex flex-col gap-2">
+          <label [for]="'branding-' + field.key">{{ field.label | translate }}</label>
+          @if (form.controls[field.key].value) {
+            <img [src]="form.controls[field.key].value" [alt]="field.label | translate"
+                 style="object-fit: contain; max-width: 280px; max-height: 100px; align-self: flex-start" />
+          }
+          <input type="file" [id]="'branding-' + field.key" [disabled]="busy"
+                 [accept]="field.key === 'favicon' ? 'image/png' : 'image/png,image/jpeg,image/webp'"
+                 (change)="upload($event, field.key)" />
+          <button mat-button type="button" [disabled]="busy || !form.controls[field.key].value" (click)="clear(field.key)">
+            {{ 'branding.clear' | translate }}
+          </button>
+        </section>
+      }
+      <p>{{ 'branding.image-help' | translate }}</p>
+      @if (busy) { <mat-progress-bar mode="indeterminate"></mat-progress-bar> }
+      @if (error) { <p role="alert">{{ error | translate }}</p> }
+      @if (message) { <p role="status">{{ message | translate }}</p> }
+      <div class="flex gap-4">
+        <button mat-raised-button color="primary" type="submit" [disabled]="busy || form.invalid || form.pristine">{{ 'action.save' | translate }}</button>
+        <button mat-button type="button" [disabled]="busy" (click)="reset()">{{ 'branding.reset' | translate }}</button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>

@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright The Thingsboard Authors
 // SPDX-License-Identifier: Apache-2.0
+import { BrandingComponent } from './branding.component';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -29,6 +30,7 @@ import { ResourceLibraryTabsComponent } from '@home/pages/admin/resource/resourc
   declarations:
     [
       GeneralSettingsComponent,
+      BrandingComponent,
       MailServerComponent,
       SmsProviderComponent,
       SendTestSmsDialogComponent,
