@@ -1,0 +1,146 @@
+name: Build and publish Docker image
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+    env:
+      MAVEN_OPTS: -Xmx2g
+      NG_BUILD_MAX_WORKERS: '2'
+      NG_CLI_ANALYTICS: 'false'
+      COMPOSE_PROJECT_NAME: openthingsboard-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      TB_IMAGE: openthingsboard-ci:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Cache frontend downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/yarn
+          key: yarn-${{ runner.os }}-${{ hashFiles('ui-ngx/yarn.lock') }}
+          restore-keys: yarn-${{ runner.os }}-
+      - name: Compile Java, Angular, DEB and upstream Docker context
+        run: >-
+          mvn -B -ntp -T 2 -pl msa/tb-node -am package
+          -DskipTests -Dpkg.skip.rpm=true -Dpkg.skip.zip=true
+      - name: Test common utilities
+        run: mvn -B -ntp -T 2 -pl common/util -am test -Dskip.ui.build=true -Dpkg.skip=true
+      - name: Check generated context and repository integrity
+        run: |
+          test -s msa/tb-node/target/thingsboard.deb
+          test -s msa/tb-node/target/Dockerfile
+          ! grep -E '\$\{(pkg\.|docker\.|project\.)' msa/tb-node/target/Dockerfile msa/tb-node/target/start-tb-node.sh
+          git diff --exit-code
+      - uses: docker/setup-buildx-action@v3
+      - name: Build upstream tb-node image
+        uses: docker/build-push-action@v6
+        with:
+          context: msa/tb-node/target
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ${{ env.TB_IMAGE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Initialize and smoke-test isolated PostgreSQL 16 stack
+        env:
+          POSTGRES_PASSWORD: ci-only-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          docker compose -f deploy/dev/compose.yaml config --quiet
+          docker compose -f deploy/dev/compose.yaml run --rm install
+          docker compose -f deploy/dev/compose.yaml up -d --wait --wait-timeout 600
+          curl --fail --retry 5 --retry-delay 5 http://127.0.0.1:18080/login -o /tmp/login.html
+          grep -q '<tb-root' /tmp/login.html
+          curl --fail --silent --show-error http://127.0.0.1:18080/api/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"sysadmin@thingsboard.org","password":"sysadmin"}' \
+            | jq -e '.token | type == "string" and length > 0' > /dev/null
+          docker compose -f deploy/dev/compose.yaml exec -T postgres \
+            psql -U thingsboard -d thingsboard -v ON_ERROR_STOP=1 \
+            -c 'CREATE TABLE compose_persistence_probe (id integer PRIMARY KEY); INSERT INTO compose_persistence_probe VALUES (1);'
+          docker compose -f deploy/dev/compose.yaml down
+          docker compose -f deploy/dev/compose.yaml up -d --wait --wait-timeout 600
+          test "$(docker compose -f deploy/dev/compose.yaml exec -T postgres psql -U thingsboard -d thingsboard -Atc 'SELECT id FROM compose_persistence_probe')" = 1
+      - name: Stack logs
+        if: failure()
+        env:
+          POSTGRES_PASSWORD: ci-only-${{ github.run_id }}-${{ github.run_attempt }}
+        run: docker compose -f deploy/dev/compose.yaml logs --no-color --tail 200
+      - name: Remove CI stack and volumes
+        if: always()
+        env:
+          POSTGRES_PASSWORD: ci-only-${{ github.run_id }}-${{ github.run_attempt }}
+        run: docker compose -f deploy/dev/compose.yaml down -v --remove-orphans
+      - name: Image name
+        id: image
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: echo "name=ghcr.io/${REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,format=long,prefix=sha-
+          flavor: latest=false
+      - name: Log in to GHCR
+        if: success() && github.event_name == 'push' && github.repository == 'ozzyoig/openthingsboard-ce'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to Docker Hub
+        if: success() && github.event_name == 'push' && github.repository == 'ozzyoig/openthingsboard-ce'
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Publish tested image to GHCR
+        if: success() && github.event_name == 'push' && github.repository == 'ozzyoig/openthingsboard-ce'
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r tag; do
+            docker tag "$TB_IMAGE" "$tag"
+            docker push "$tag"
+          done <<< "$IMAGE_TAGS"
+      - name: Publish tested image to Docker Hub
+        if: success() && github.event_name == 'push' && github.repository == 'ozzyoig/openthingsboard-ce'
+        env:
+          DOCKERHUB_IMAGE: ozzysin/openthingsboard-ce
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          docker tag "$TB_IMAGE" "$DOCKERHUB_IMAGE:sha-$COMMIT_SHA"
+          docker tag "$TB_IMAGE" "$DOCKERHUB_IMAGE:dev"
+          docker push "$DOCKERHUB_IMAGE:sha-$COMMIT_SHA"
+          docker push "$DOCKERHUB_IMAGE:dev"

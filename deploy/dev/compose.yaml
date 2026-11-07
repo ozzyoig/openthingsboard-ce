@@ -1,0 +1,81 @@
+name: openthingsboard-ce-dev
+
+x-app: &app
+  image: ${TB_IMAGE:-ghcr.io/ozzyoig/openthingsboard-ce:main}
+  platform: linux/amd64
+  environment: &app-environment
+    TB_SERVICE_TYPE: monolith
+    TB_QUEUE_TYPE: in-memory
+    DATABASE_TS_TYPE: sql
+    SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/thingsboard
+    SPRING_DATASOURCE_USERNAME: thingsboard
+    SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    HTTP_BIND_PORT: "8080"
+    JS_EVALUATOR: local
+    JAVA_OPTS: -Xms512m -Xmx2g
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: thingsboard
+      POSTGRES_USER: thingsboard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U thingsboard -d thingsboard"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  thingsboard:
+    <<: *app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${TB_HTTP_PORT:-18080}:8080"
+      - "127.0.0.1:${TB_MQTT_PORT:-11883}:1883"
+    volumes:
+      - app-data:/usr/share/thingsboard/data
+      - app-logs:/var/log/thingsboard
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -ec
+        - |
+          exec 3<>/dev/tcp/127.0.0.1/8080
+          printf 'GET /login HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3
+          read -r status <&3
+          [[ "$$status" == *" 200 "* ]]
+      interval: 15s
+      timeout: 5s
+      start_period: 120s
+      retries: 20
+
+  install:
+    <<: *app
+    profiles: [tools]
+    restart: "no"
+    environment:
+      <<: *app-environment
+      INSTALL_TB: "true"
+      LOAD_DEMO: "false"
+
+  upgrade:
+    <<: *app
+    profiles: [tools]
+    restart: "no"
+    environment:
+      <<: *app-environment
+      UPGRADE_TB: "true"
+      FROM_VERSION: ${FROM_VERSION:-}
+
+volumes:
+  postgres-data:
+  app-data:
+  app-logs:
