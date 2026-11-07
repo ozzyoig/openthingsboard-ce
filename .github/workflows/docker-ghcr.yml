@@ -47,6 +47,11 @@ jobs:
           -DskipTests -Dpkg.skip.rpm=true -Dpkg.skip.zip=true
       - name: Test common utilities
         run: mvn -B -ntp -T 2 -pl common/util -am test -Dskip.ui.build=true -Dpkg.skip=true
+      - name: Test White Labeling against PostgreSQL 16
+        run: >-
+          mvn -B -ntp -T 2 -pl application -am test
+          -Dtest=BrandingServiceTest,BrandingControllerTest
+          -Dsurefire.failIfNoSpecifiedTests=false -Dskip.ui.build=true -Dpkg.skip=true
       - name: Check generated context and repository integrity
         run: |
           test -s msa/tb-node/target/thingsboard.deb
@@ -74,16 +79,23 @@ jobs:
           docker compose -f deploy/dev/compose.yaml up -d --wait --wait-timeout 600
           curl --fail --retry 5 --retry-delay 5 http://127.0.0.1:18080/login -o /tmp/login.html
           grep -q '<tb-root' /tmp/login.html
-          curl --fail --silent --show-error http://127.0.0.1:18080/api/auth/login \
+          auth_token=$(curl --fail --silent --show-error http://127.0.0.1:18080/api/auth/login \
             -H 'Content-Type: application/json' \
             -d '{"username":"sysadmin@thingsboard.org","password":"sysadmin"}' \
-            | jq -e '.token | type == "string" and length > 0' > /dev/null
+            | jq -er '.token | select(type == "string" and length > 0)')
+          curl --fail --silent --show-error http://127.0.0.1:18080/api/branding \
+            -H "X-Authorization: Bearer $auth_token" \
+            -H 'Content-Type: application/json' \
+            -d '{"appName":"CI persisted branding","primaryColor":"#123456"}' \
+            | jq -e '.appName == "CI persisted branding"' > /dev/null
           docker compose -f deploy/dev/compose.yaml exec -T postgres \
             psql -U thingsboard -d thingsboard -v ON_ERROR_STOP=1 \
             -c 'CREATE TABLE compose_persistence_probe (id integer PRIMARY KEY); INSERT INTO compose_persistence_probe VALUES (1);'
           docker compose -f deploy/dev/compose.yaml down
           docker compose -f deploy/dev/compose.yaml up -d --wait --wait-timeout 600
           test "$(docker compose -f deploy/dev/compose.yaml exec -T postgres psql -U thingsboard -d thingsboard -Atc 'SELECT id FROM compose_persistence_probe')" = 1
+          curl --fail --silent --show-error http://127.0.0.1:18080/api/noauth/branding \
+            | jq -e '.appName == "CI persisted branding" and .primaryColor == "#123456"' > /dev/null
       - name: Stack logs
         if: failure()
         env:
