@@ -125,7 +125,7 @@ public class TbResourceInfo extends BaseData<TbResourceId> implements HasName, H
 
     @JsonIgnore
     public String getSearchText() {
-        return title;
+        return searchText != null ? searchText : title;
     }
 
     @SneakyThrows
